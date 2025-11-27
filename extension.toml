@@ -1,0 +1,15 @@
+id = "drupal"
+name = "Drupal"
+description = "Enhanced Drupal development: automatic project detection, PHPCS/PHPCBF integration, Drupal-specific Intelephense stubs, service autocompletion, and go-to-definition for services and classes"
+version = "0.0.1"
+schema_version = 1
+authors = ["syntlyx"]
+repository = "https://github.com/syntlyx/zed-drupal"
+
+[language_servers.intelephense]
+name = "Intelephense"
+languages = ["PHP"]
+
+[language_servers.drupal-lsp-server]
+name = "Drupal LSP Server"
+languages = ["PHP", "YAML"]
