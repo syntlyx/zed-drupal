@@ -70,6 +70,17 @@ impl IntelephenseManager {
                     "associations": [
                         "*.inc", "*.module", "*.install", "*.theme",
                         "*.profile", "*.test", "*.php", "*.info"
+                    ],
+                    "exclude": [
+                        "**/node_modules/**",
+                        "**/vendor/**/Tests/**",
+                        "**/vendor/**/tests/**",
+                        "**/core/tests/**",
+                        "**/core/modules/*/tests/**",
+                        "**/sites/simpletest/**",
+                        "**/files/**",
+                        "**/sites/default/files/**",
+                        "**/.git/**"
                     ]
                 },
                 "format":{
