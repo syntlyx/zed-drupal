@@ -1,5 +1,4 @@
 pub mod drupal_lsp;
-pub mod intelephense;
 
 use std::fs;
 use zed_extension_api::{self as zed, LanguageServerId, Result};

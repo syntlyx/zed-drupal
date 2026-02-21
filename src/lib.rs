@@ -1,24 +1,34 @@
 mod detection;
 mod language_servers;
 
+use detection::DrupalProject;
 use language_servers::drupal_lsp::DrupalLspManager;
-use language_servers::intelephense::IntelephenseManager;
 
 use serde_json::Value;
 use zed_extension_api::{self as zed, Extension, LanguageServerId, Result, Worktree};
 
 pub struct DrupalExtension {
-    intelephense: Option<IntelephenseManager>,
     drupal_lsp: Option<DrupalLspManager>,
-    is_drupal: bool,
+    /// Cached detection result. `None` before first detection attempt.
+    /// After detection: `Some(Some(project))` for Drupal projects, `Some(None)` for non-Drupal.
+    drupal: Option<Option<DrupalProject>>,
+}
+
+impl DrupalExtension {
+    /// Returns the cached Drupal project, running detection on first call.
+    fn project(&mut self, worktree: &Worktree) -> Option<&DrupalProject> {
+        if self.drupal.is_none() {
+            self.drupal = Some(detection::detect(worktree));
+        }
+        self.drupal.as_ref().and_then(|d| d.as_ref())
+    }
 }
 
 impl Extension for DrupalExtension {
     fn new() -> Self {
         Self {
-            intelephense: None,
             drupal_lsp: None,
-            is_drupal: false,
+            drupal: None,
         }
     }
 
@@ -27,16 +37,11 @@ impl Extension for DrupalExtension {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<zed::Command> {
-        if !self.is_drupal && !detection::is_drupal_project(worktree) {
+        if self.project(worktree).is_none() {
             return Err("Not a Drupal project".to_string());
         }
-        self.is_drupal = true;
 
         match language_server_id.as_ref() {
-            "intelephense" => self
-                .intelephense
-                .get_or_insert(IntelephenseManager::new(language_server_id.clone()))
-                .command(worktree),
             "drupal-lsp-server" => self
                 .drupal_lsp
                 .get_or_insert(DrupalLspManager::new(language_server_id.clone()))
@@ -50,19 +55,13 @@ impl Extension for DrupalExtension {
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<Option<Value>> {
-        if !self.is_drupal && !detection::is_drupal_project(worktree) {
+        let Some(project) = self.project(worktree) else {
             return Ok(None);
-        }
-        self.is_drupal = true;
+        };
 
-        let root = detection::detect_drupal_root(worktree);
+        let root = project.drupal_root.clone();
 
         match language_server_id.as_ref() {
-            "intelephense" => Ok(Some(
-                self.intelephense
-                    .get_or_insert(IntelephenseManager::new(language_server_id.clone()))
-                    .build_options(&root),
-            )),
             "drupal-lsp-server" => Ok(Some(
                 self.drupal_lsp
                     .get_or_insert(DrupalLspManager::new(language_server_id.clone()))
